@@ -22,6 +22,7 @@ import Extension from "./lib/Extension";
 import ExtensionManager from "./lib/ExtensionManager";
 import ComponentView from "./lib/ComponentView";
 import headingToSlug from "./lib/headingToSlug";
+import { Node as ProsemirrorNode } from "prosemirror-model";
 
 // nodes
 import ReactNode from "./nodes/ReactNode";
@@ -81,6 +82,7 @@ export type Props = {
   onSave?: ({ done: boolean }) => void;
   onCancel?: () => void;
   onChange: (value: () => string) => void;
+  onModelChange: (node: ProsemirrorNode) => ProsemirrorNode;
   onImageUploadStart?: () => void;
   onImageUploadStop?: () => void;
   onSearchLink?: (term: string) => Promise<SearchResult[]>;
@@ -331,7 +333,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   createState(value?: string) {
     const doc = this.createDocument(value || this.props.defaultValue);
-
     return EditorState.create({
       schema: this.schema,
       doc,
@@ -352,6 +353,17 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
     return this.parser.parse(content);
   }
 
+  // traverse(rootNode, levelIndent){
+  //   if(rootNode.isText){
+  //     console.log(levelIndent + rootNode.text);
+  //   }
+  //   if(!rootNode.isLeaf){
+  //     for(let i = 0 ; i < rootNode.childCount; i++){
+  //       this.traverse(rootNode.child(i), levelIndent + "\t");
+  //     }
+  //   }
+  // }
+
   createView() {
     const view = new EditorView(this.element, {
       state: this.createState(),
@@ -361,6 +373,16 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         const { state, transactions } = this.view.state.applyTransaction(
           transaction
         );
+        // console.log(state.doc.toString());
+        // console.log(state.doc.toJSON());
+        // console.log("Total Children: " + state.doc.childCount);
+        // let tempRoot = state.doc;
+        // this.traverse(tempRoot, "");
+        // 
+        console.log("calling modelChange");
+        if (this.props.onModelChange){
+          state.doc = this.props.onModelChange(state.doc);
+        }
 
         this.view.updateState(state);
 
@@ -396,6 +418,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   value = (): string => {
+    console.log(this.view.state.doc);
     return this.serializer.serialize(this.view.state.doc);
   };
 
