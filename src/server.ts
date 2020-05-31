@@ -24,6 +24,7 @@ import TableRow from "./nodes/TableRow";
 
 // marks
 import Bold from "./marks/Bold";
+import Tag from "./marks/Tag";
 import Code from "./marks/Code";
 import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
@@ -35,6 +36,7 @@ const extensions = new ExtensionManager([
   new Text(),
   new Paragraph(),
   new Blockquote(),
+  new Tag(),
   new BulletList(),
   new CodeBlock(),
   new CodeFence(),

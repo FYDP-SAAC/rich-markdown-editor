@@ -53,6 +53,7 @@ import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
 import Link from "./marks/Link";
 import Strikethrough from "./marks/Strikethrough";
+import Tag from "./marks/Tag";
 
 // plugins
 import BlockMenuTrigger from "./plugins/BlockMenuTrigger";
@@ -62,6 +63,7 @@ import Placeholder from "./plugins/Placeholder";
 import SmartText from "./plugins/SmartText";
 import TrailingNode from "./plugins/TrailingNode";
 import MarkdownPaste from "./plugins/MarkdownPaste";
+import Filter from "./plugins/Filter";
 
 export { schema, parser, serializer } from "./server";
 
@@ -230,6 +232,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         }),
         new TableRow(),
         new Bold(),
+        new Tag(),
         new Code(),
         new Highlight(),
         new Italic(),
@@ -243,6 +246,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new SmartText(),
         new TrailingNode(),
         new MarkdownPaste(),
+        new Filter(),
         new Keys({
           onSave: this.handleSave,
           onSaveAndExit: this.handleSaveAndExit,
@@ -379,10 +383,10 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         // let tempRoot = state.doc;
         // this.traverse(tempRoot, "");
         // 
-        console.log("calling modelChange");
-        if (this.props.onModelChange){
-          state.doc = this.props.onModelChange(state.doc);
-        }
+        // console.log("calling modelChange");
+        // if (this.props.onModelChange){
+        //   state.doc = this.props.onModelChange(state.doc);
+        // }
 
         this.view.updateState(state);
 
@@ -744,6 +748,14 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
     font-style: italic;
   }
 
+  tag {
+    background: yellow;
+  }
+
+  hidden{
+    display: none;
+  }
+  
   b,
   strong {
     font-weight: 600;

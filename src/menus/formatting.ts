@@ -8,6 +8,7 @@ import {
   LinkIcon,
   StrikethroughIcon,
   HighlightIcon,
+  CommentIcon,
 } from "outline-icons";
 import { isInTable } from "prosemirror-tables";
 import { EditorState } from "prosemirror-state";
@@ -89,6 +90,15 @@ export default function formattingMenuItems(state: EditorState) {
       icon: LinkIcon,
       active: isMarkActive(schema.marks.link),
       attrs: { href: "" },
+    },
+    {
+      name: "separator",
+    },
+    {
+      name: "tag",
+      tooltip: "Tag Selection",
+      icon: CommentIcon,
+      active: isMarkActive(schema.marks.tag),
     },
   ];
 }
