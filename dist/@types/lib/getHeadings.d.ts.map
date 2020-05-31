@@ -1,1 +1,0 @@
-{"version":3,"file":"getHeadings.d.ts","sourceRoot":"","sources":["../../../src/lib/getHeadings.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,UAAU,EAAE,MAAM,kBAAkB,CAAC;AAG9C,MAAM,CAAC,OAAO,UAAU,WAAW,CACjC,IAAI,EAAE,UAAU,GACf;IAAE,KAAK,EAAE,MAAM,CAAC;IAAC,KAAK,EAAE,MAAM,CAAC;IAAC,EAAE,EAAE,MAAM,CAAA;CAAE,EAAE,CA6BhD"}
