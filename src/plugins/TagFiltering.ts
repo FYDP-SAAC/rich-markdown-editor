@@ -5,6 +5,35 @@ export default class TagFiltering extends Extension {
   static pluginName = "tag-filtering";
   static pluginKey = new PluginKey(TagFiltering.pluginName);
 
+  static matchTextblockNode = (node, tagFilters) => {
+    // TODO (carl) tag marks not just string
+    if (!tagFilters) {
+      return true;
+    }
+    if (!Array.isArray(tagFilters)) {
+      return node.textContent.includes(tagFilters);
+    }
+    // invariant: tagFilters isArray
+    // only not expressions have array length 2
+    if (tagFilters.length === 2) {
+      return !TagFiltering.matchTextblockNode(node, tagFilters[1]);
+    }
+    const match1 = TagFiltering.matchTextblockNode(node, tagFilters[0]);
+    if (tagFilters.length === 1) {
+      return match1;
+    }
+    // invariant: length 3, [1] is op, [2] is tag or sub expression
+    const andOp = tagFilters[1] === "&";
+    // short circuit evaluation
+    if (andOp !== match1) {
+      return match1;
+    }
+    // invariant:
+    // if andOp then !match1, so result should be "match2",
+    // if !andOp then match1, so result should be "match2"
+    return TagFiltering.matchTextblockNode(node, tagFilters[2]);
+  };
+
   get name() {
     return TagFiltering.pluginName;
   }
@@ -14,23 +43,73 @@ export default class TagFiltering extends Extension {
       new Plugin({
         key: TagFiltering.pluginKey,
         state: {
-          init: () => ({ idx: 0, val: null }),
+          init: () => null,
           apply: (tr, v) => {
+            // TODO (carl) handle readonly toggling?
             const val = tr.getMeta(TagFiltering.pluginKey);
-            if (val !== undefined) return { idx: v.idx + 1, val: val };
-            return v;
+            return val === undefined ? v : val;
           },
         },
-        view: () => ({
-          update: (view, prevEditorState) => {
-            const state = TagFiltering.pluginKey.getState(view.state);
-            const prevState = TagFiltering.pluginKey.getState(prevEditorState);
-            if (state.idx !== prevState.idx) {
-              // TODO new filters so have to refilter - iterate through all the nodes of the view.state.doc, and:
-              // dispatch transaction(s) to set mark/attr to be hidden for nodes that match against state.tagFilters
+        appendTransaction: (transactions, oldState, newState) => {
+          // TODO (carl) handle readonly toggling?
+          // TODO (carl) trailing node?
+          let trTagFilters = undefined;
+          for (let i = transactions.length - 1; i >= 0; --i) {
+            trTagFilters = transactions[i].getMeta(TagFiltering.pluginKey);
+            if (trTagFilters !== undefined) {
+              break;
             }
-          },
-        }),
+          }
+          if (trTagFilters === undefined) {
+            return;
+          }
+          let tr = null;
+          const evaluate = (node, pos) => {
+            let match = false;
+            let difPos = 0;
+            if (node.isTextblock) {
+              match = TagFiltering.matchTextblockNode(node, trTagFilters);
+            } else {
+              let nextPos = pos + 1;
+              for (let i = 0; i < node.childCount; ++i) {
+                const child = node.child(i);
+                const evaluateChild = evaluate(node.child(i), nextPos);
+                match = match || evaluateChild[0];
+                nextPos = evaluateChild[1];
+              }
+            }
+            if (node.type !== node.type.schema.doc) { // don't hide/unhide for the doc node
+              if (!match) {
+                // TODO (carl) actually hide
+                if (
+                  node.isTextblock &&
+                  !node.textContent.startsWith("${hide} ")
+                ) {
+                  const endPos =
+                    pos + (node.textContent.startsWith("${unhide} ") ? 10 : 0);
+                  difPos = pos + 8 - endPos;
+                  tr = (tr || newState.tr).insertText(
+                    "${hide} ",
+                    pos,
+                    endPos
+                  );
+                }
+              } else {
+                // TODO (carl) actually detect hidden and unhide
+                if (
+                  node.isTextblock &&
+                  node.textContent.startsWith("${hide} ")
+                ) {
+                  difPos = -8;
+                  tr = (tr || newState.tr).insertText("", pos, pos + 8);
+                }
+              }
+            }
+            return [match, pos + node.nodeSize + difPos];
+          };
+          evaluate(newState.doc, 0);
+          return tr;
+        },
       }),
     ];
   }
