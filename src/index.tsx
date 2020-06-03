@@ -145,6 +145,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
+    console.log(this);
 
     const transaction = this.view.state.tr.setMeta(
       TagFiltering.pluginKey,
@@ -372,17 +373,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
     return this.parser.parse(content);
   }
 
-  // traverse(rootNode, levelIndent){
-  //   if(rootNode.isText){
-  //     console.log(levelIndent + rootNode.text);
-  //   }
-  //   if(!rootNode.isLeaf){
-  //     for(let i = 0 ; i < rootNode.childCount; i++){
-  //       this.traverse(rootNode.child(i), levelIndent + "\t");
-  //     }
-  //   }
-  // }
-
   createView() {
     const view = new EditorView(this.element, {
       state: this.createState(),
@@ -392,16 +382,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         const { state, transactions } = this.view.state.applyTransaction(
           transaction
         );
-        // console.log(state.doc.toString());
-        // console.log(state.doc.toJSON());
-        // console.log("Total Children: " + state.doc.childCount);
-        // let tempRoot = state.doc;
-        // this.traverse(tempRoot, "");
-        // 
-        console.log("calling modelChange");
-        if (this.props.onModelChange){
-          state.doc = this.props.onModelChange(state.doc);
-        }
 
         this.view.updateState(state);
 
@@ -437,7 +417,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   value = (): string => {
-    console.log(this.view.state.doc);
     return this.serializer.serialize(this.view.state.doc);
   };
 

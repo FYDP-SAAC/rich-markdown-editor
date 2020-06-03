@@ -64,20 +64,25 @@ export default class TagFiltering extends Extension {
             return;
           }
           let tr = null;
-          const evaluate = (node, pos) => {
+          const evaluate = (node, pos, offset) => {
             let match = false;
-            let difPos = 0;
             if (node.isTextblock) {
               match = TagFiltering.matchTextblockNode(node, trTagFilters);
             } else {
-              let nextPos = pos + 1;
+              let cumulativeChildSize = 1;
               for (let i = 0; i < node.childCount; ++i) {
                 const child = node.child(i);
-                const evaluateChild = evaluate(node.child(i), nextPos);
+                const evaluateChild = evaluate(
+                  child,
+                  pos + cumulativeChildSize,
+                  offset
+                );
                 match = match || evaluateChild[0];
-                nextPos = evaluateChild[1];
+                offset = evaluateChild[1];
+                cumulativeChildSize += child.nodeSize;
               }
             }
+            let difPos = 0;
             if (node.type !== node.type.schema.doc) { // don't hide/unhide for the doc node
               if (!match) {
                 // TODO (carl) actually hide
@@ -90,8 +95,8 @@ export default class TagFiltering extends Extension {
                   difPos = pos + 8 - endPos;
                   tr = (tr || newState.tr).insertText(
                     "${hide} ",
-                    pos,
-                    endPos
+                    pos + offset,
+                    endPos + offset
                   );
                 }
               } else {
@@ -101,13 +106,17 @@ export default class TagFiltering extends Extension {
                   node.textContent.startsWith("${hide} ")
                 ) {
                   difPos = -8;
-                  tr = (tr || newState.tr).insertText("", pos, pos + 8);
+                  tr = (tr || newState.tr).insertText(
+                    "",
+                    pos + offset,
+                    pos + offset + 8
+                  );
                 }
               }
             }
-            return [match, pos + node.nodeSize + difPos];
+            return [match, offset + difPos];
           };
-          evaluate(newState.doc, 0);
+          evaluate(newState.doc, 0, 0);
           return tr;
         },
       }),
