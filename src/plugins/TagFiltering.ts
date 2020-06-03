@@ -2,23 +2,24 @@ import { Plugin, PluginKey } from "prosemirror-state";
 import Extension from "../lib/Extension";
 
 export default class TagFiltering extends Extension {
-  static pluginName = "tag-filtering";
-  static pluginKey = new PluginKey(TagFiltering.pluginName);
+  static PLUGIN_NAME = "tag-filtering";
+  static pluginKey = new PluginKey(TagFiltering.PLUGIN_NAME);
+  static TAG_REGEX = /#{[^{}]+}/g;
 
-  static matchTextblockNode = (node, tagFilters) => {
+  static matchTagFilters = (tags, tagFilters) => {
     // TODO (carl) tag marks not just string
     if (!tagFilters) {
       return true;
     }
     if (!Array.isArray(tagFilters)) {
-      return node.textContent.includes(tagFilters);
+      return tags.has(tagFilters);
     }
     // invariant: tagFilters isArray
     // only not expressions have array length 2
     if (tagFilters.length === 2) {
-      return !TagFiltering.matchTextblockNode(node, tagFilters[1]);
+      return !TagFiltering.matchTagFilters(tags, tagFilters[1]);
     }
-    const match1 = TagFiltering.matchTextblockNode(node, tagFilters[0]);
+    const match1 = TagFiltering.matchTagFilters(tags, tagFilters[0]);
     if (tagFilters.length === 1) {
       return match1;
     }
@@ -31,11 +32,11 @@ export default class TagFiltering extends Extension {
     // invariant:
     // if andOp then !match1, so result should be "match2",
     // if !andOp then match1, so result should be "match2"
-    return TagFiltering.matchTextblockNode(node, tagFilters[2]);
+    return TagFiltering.matchTagFilters(tags, tagFilters[2]);
   };
 
   get name() {
-    return TagFiltering.pluginName;
+    return TagFiltering.PLUGIN_NAME;
   }
 
   get plugins() {
@@ -67,7 +68,14 @@ export default class TagFiltering extends Extension {
           const evaluate = (node, pos, offset) => {
             let match = false;
             if (node.isTextblock) {
-              match = TagFiltering.matchTextblockNode(node, trTagFilters);
+              const nodeTags = new Set([]);
+              const nodeTagsIt = node.textContent.matchAll(
+                TagFiltering.TAG_REGEX
+              );
+              for (const nodeTag of nodeTagsIt) {
+                nodeTags.add(nodeTag[0]);
+              }
+              match = TagFiltering.matchTagFilters(nodeTags, trTagFilters);
             } else {
               let cumulativeChildSize = 1;
               for (let i = 0; i < node.childCount; ++i) {
@@ -83,7 +91,7 @@ export default class TagFiltering extends Extension {
               }
             }
             let difPos = 0;
-            if (node.type !== node.type.schema.doc) { // don't hide/unhide for the doc node
+            if (node.type !== node.type.schema.doc) {
               if (!match) {
                 // TODO (carl) actually hide
                 if (
