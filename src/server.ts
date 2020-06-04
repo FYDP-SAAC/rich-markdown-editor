@@ -29,6 +29,8 @@ import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
 import Link from "./marks/Link";
 import Strikethrough from "./marks/Strikethrough";
+import Tag from "./marks/Tag";
+import Hide from "./marks/Hide";
 
 const extensions = new ExtensionManager([
   new Doc(),
@@ -52,6 +54,8 @@ const extensions = new ExtensionManager([
   new Bold(),
   new Code(),
   new Highlight(),
+  new Tag(),
+  new Hide(),
   new Italic(),
   new Link(),
   new Strikethrough(),
