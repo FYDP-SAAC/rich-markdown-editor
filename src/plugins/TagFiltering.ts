@@ -3,8 +3,9 @@ import Extension from "../lib/Extension";
 import Hide from "../marks/Hide";
 
 export default class TagFiltering extends Extension {
-  static pluginName = "tag-filtering";
-  static pluginKey = new PluginKey(TagFiltering.pluginName);
+  static PLUGIN_NAME = "tag-filtering";
+  static pluginKey = new PluginKey(TagFiltering.PLUGIN_NAME);
+  static TAG_REGEX = /#{[^{}]+}/g;
 
   static matchTextblockNode = (tag, tagFilters) => {
     // TODO (carl) tag marks not just string
@@ -21,6 +22,7 @@ export default class TagFiltering extends Extension {
       return !TagFiltering.matchTextblockNode(tag, tagFilters[1]);
     }
     const match1 = TagFiltering.matchTextblockNode(tag, tagFilters[0]);
+
     if (tagFilters.length === 1) {
       return match1;
     }
@@ -37,7 +39,7 @@ export default class TagFiltering extends Extension {
   };
 
   get name() {
-    return TagFiltering.pluginName;
+    return TagFiltering.PLUGIN_NAME;
   }
 
   get plugins() {
