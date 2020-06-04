@@ -53,6 +53,8 @@ import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
 import Link from "./marks/Link";
 import Strikethrough from "./marks/Strikethrough";
+import Tag from "./marks/Tag";
+import Hide from "./marks/Hide";
 
 // plugins
 import BlockMenuTrigger from "./plugins/BlockMenuTrigger";
@@ -251,6 +253,8 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new Bold(),
         new Code(),
         new Highlight(),
+        new Tag(),
+        new Hide(),
         new Italic(),
         new Link({
           onClickLink: this.props.onClickLink,
@@ -742,6 +746,13 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
     font-style: italic;
   }
 
+  tag {
+    background: yellow;
+  }
+
+  hide {
+    display: none;
+  }
   b,
   strong {
     font-weight: 600;

@@ -62,6 +62,10 @@ export default class Link extends Mark {
   inputRules({ type }) {
     return [
       new InputRule(LINK_INPUT_REGEX, (state, match, start, end) => {
+        console.log(state);
+        console.log(match);
+        console.log(start);
+        console.log(end);
         const [okay, alt, href] = match;
         const { tr } = state;
 

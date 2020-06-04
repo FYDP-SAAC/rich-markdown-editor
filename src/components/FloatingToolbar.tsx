@@ -8,6 +8,7 @@ import getTableRowMenuItems from "../menus/tableRow";
 import getTableMenuItems from "../menus/table";
 import getFormattingMenuItems from "../menus/formatting";
 import LinkEditor, { SearchResult } from "./LinkEditor";
+import TagEditor from "./TagEditor";
 import Menu from "./Menu";
 import isMarkActive from "../queries/isMarkActive";
 import getMarkRange from "../queries/getMarkRange";
@@ -129,8 +130,9 @@ export default class FloatingToolbar extends React.Component<Props> {
     const rowIndex = getRowIndex(state.selection);
     const isTableSelection = colIndex !== undefined && rowIndex !== undefined;
     const link = isMarkActive(state.schema.marks.link)(state);
-    const range = getMarkRange(selection.$from, state.schema.marks.link);
-
+    const tag = isMarkActive(state.schema.marks.tag)(state);
+    const linkRange = getMarkRange(selection.$from, state.schema.marks.link);
+    const tagRange = getMarkRange(selection.$from, state.schema.marks.tag);
     let items = [];
     if (isTableSelection) {
       items = getTableMenuItems();
@@ -155,16 +157,20 @@ export default class FloatingToolbar extends React.Component<Props> {
           left={this.state.left}
           offset={this.state.offset}
         >
-          {link && range ? (
-            <LinkEditor
-              mark={range.mark}
-              from={range.from}
-              to={range.to}
-              {...this.props}
-            />
-          ) : (
-            <Menu items={items} {...this.props} />
-          )}
+          {(link && linkRange) ? (<LinkEditor
+                  mark={linkRange.mark}
+                  from={linkRange.from}
+                  to={linkRange.to}
+                  {...this.props}
+                />) :
+            ((tag && tagRange) ? (<TagEditor
+                  mark={tagRange.mark}
+                  from={tagRange.from}
+                  to={tagRange.to}
+                  {...this.props}/>)
+              : (<Menu items={items} {...this.props} />)
+            )
+            }
         </Wrapper>
       </Portal>
     );

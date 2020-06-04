@@ -1,24 +1,26 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import Extension from "../lib/Extension";
+import Hide from "../marks/Hide";
 
 export default class TagFiltering extends Extension {
   static pluginName = "tag-filtering";
   static pluginKey = new PluginKey(TagFiltering.pluginName);
 
-  static matchTextblockNode = (node, tagFilters) => {
+  static matchTextblockNode = (tag, tagFilters) => {
     // TODO (carl) tag marks not just string
     if (!tagFilters) {
       return true;
     }
     if (!Array.isArray(tagFilters)) {
-      return node.textContent.includes(tagFilters);
+      let filter = tagFilters.substring(2, tagFilters.length - 1);
+      return tag.includes(filter);
     }
     // invariant: tagFilters isArray
     // only not expressions have array length 2
     if (tagFilters.length === 2) {
-      return !TagFiltering.matchTextblockNode(node, tagFilters[1]);
+      return !TagFiltering.matchTextblockNode(tag, tagFilters[1]);
     }
-    const match1 = TagFiltering.matchTextblockNode(node, tagFilters[0]);
+    const match1 = TagFiltering.matchTextblockNode(tag, tagFilters[0]);
     if (tagFilters.length === 1) {
       return match1;
     }
@@ -31,7 +33,7 @@ export default class TagFiltering extends Extension {
     // invariant:
     // if andOp then !match1, so result should be "match2",
     // if !andOp then match1, so result should be "match2"
-    return TagFiltering.matchTextblockNode(node, tagFilters[2]);
+    return TagFiltering.matchTextblockNode(tag, tagFilters[2]);
   };
 
   get name() {
@@ -60,63 +62,82 @@ export default class TagFiltering extends Extension {
               break;
             }
           }
-          if (trTagFilters === undefined) {
+          if (trTagFilters === undefined || trTagFilters === null) {
             return;
           }
           let tr = null;
-          const evaluate = (node, pos, offset) => {
+          const evaluate = (node, pos) => {
             let match = false;
-            if (node.isTextblock) {
-              match = TagFiltering.matchTextblockNode(node, trTagFilters);
+            let allMarks = node.marks;
+            let hasTag = false;
+            let tag = "";
+            for(let i = 0; i < allMarks.length; i++){
+              let mark = allMarks[i];
+              if(mark['type']['name'] == "tag"){
+                hasTag = true;
+                tag = mark['attrs']['name'];
+                break;
+              }
+            }
+            if (hasTag) {
+              match = TagFiltering.matchTextblockNode(tag, trTagFilters);
             } else {
-              let cumulativeChildSize = 1;
+              let cumulativeChildSize = 0;
               for (let i = 0; i < node.childCount; ++i) {
                 const child = node.child(i);
                 const evaluateChild = evaluate(
                   child,
-                  pos + cumulativeChildSize,
-                  offset
-                );
+                  pos + cumulativeChildSize
+               );
                 match = match || evaluateChild[0];
-                offset = evaluateChild[1];
-                cumulativeChildSize += child.nodeSize;
+                cumulativeChildSize += evaluateChild[1];
               }
             }
             let difPos = 0;
             if (node.type !== node.type.schema.doc) { // don't hide/unhide for the doc node
+              let nodeMarks = node.marks;
+              let hasHide = false;
+              for(let i = 0; i < nodeMarks.length; i++){
+                let mark = nodeMarks[i];
+                if(mark['type']['name'] == "hide"){
+                  nodeMarks = true;
+                  break;
+                }
+              }
               if (!match) {
                 // TODO (carl) actually hide
                 if (
-                  node.isTextblock &&
-                  !node.textContent.startsWith("${hide} ")
+                  node.text != undefined &&
+                  !hasHide
                 ) {
                   const endPos =
                     pos + (node.textContent.startsWith("${unhide} ") ? 10 : 0);
                   difPos = pos + 8 - endPos;
-                  tr = (tr || newState.tr).insertText(
-                    "${hide} ",
-                    pos + offset,
-                    endPos + offset
+                  tr = (tr || newState.tr).addMark(
+                    pos, pos+node.text.length, newState.schema.marks.hide.create()
                   );
                 }
               } else {
                 // TODO (carl) actually detect hidden and unhide
                 if (
-                  node.isTextblock &&
-                  node.textContent.startsWith("${hide} ")
+                  node.text != undefined
                 ) {
                   difPos = -8;
-                  tr = (tr || newState.tr).insertText(
-                    "",
-                    pos + offset,
-                    pos + offset + 8
-                  );
+                  tr = (tr || newState.tr).removeMark( pos, pos+node.text.length, newState.schema.marks.hide);
                 }
               }
             }
-            return [match, offset + difPos];
+            return [match, node.nodeSize];
           };
-          evaluate(newState.doc, 0, 0);
+          
+          const traverse = (node) => {
+            for (let i = 0; i < node.childCount; ++i) {
+              const child = node.child(i);
+              traverse(child);
+              }
+          }
+          evaluate(newState.doc, 0);
+          traverse(newState.doc);
           return tr;
         },
       }),
