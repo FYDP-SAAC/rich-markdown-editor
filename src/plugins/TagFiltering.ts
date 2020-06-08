@@ -1,10 +1,16 @@
+import { NodeRange } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
+import { findWrapping } from "prosemirror-transform";
 import Extension from "../lib/Extension";
 
 export default class TagFiltering extends Extension {
   static PLUGIN_NAME = "tag-filtering";
   static pluginKey = new PluginKey(TagFiltering.PLUGIN_NAME);
-  static TAG_REGEX = /#{[^{}]+}/g;
+  static TAG_REGEX = /#{[^#{}]+}/g;
+
+  get name() {
+    return TagFiltering.PLUGIN_NAME;
+  }
 
   static matchTagFilters = (tags, tagFilters) => {
     // TODO (carl) tag marks not just string
@@ -35,10 +41,6 @@ export default class TagFiltering extends Extension {
     return TagFiltering.matchTagFilters(tags, tagFilters[2]);
   };
 
-  get name() {
-    return TagFiltering.PLUGIN_NAME;
-  }
-
   get plugins() {
     return [
       new Plugin({
@@ -64,11 +66,10 @@ export default class TagFiltering extends Extension {
           if (trTagFilters === undefined) {
             return;
           }
-          let tr = null;
-          const evaluate = (node, pos, offset) => {
+          const evaluate = (tr, node, parent, parentTags, pos, offset) => {
             let match = false;
+            let nodeTags = new Set([...parentTags]);
             if (node.isTextblock) {
-              const nodeTags = new Set([]);
               const nodeTagsIt = node.textContent.matchAll(
                 TagFiltering.TAG_REGEX
               );
@@ -81,51 +82,36 @@ export default class TagFiltering extends Extension {
               for (let i = 0; i < node.childCount; ++i) {
                 const child = node.child(i);
                 const evaluateChild = evaluate(
+                  tr,
                   child,
+                  node,
+                  nodeTags,
                   pos + cumulativeChildSize,
                   offset
                 );
-                match = match || evaluateChild[0];
-                offset = evaluateChild[1];
+                tr = evaluateChild[0];
+                match = match || evaluateChild[1];
+                offset = evaluateChild[3];
                 cumulativeChildSize += child.nodeSize;
-              }
-            }
-            let difPos = 0;
-            if (node.type !== node.type.schema.doc) {
-              if (!match) {
-                // TODO (carl) actually hide
-                if (
-                  node.isTextblock &&
-                  !node.textContent.startsWith("${hide} ")
-                ) {
-                  const endPos =
-                    pos + (node.textContent.startsWith("${unhide} ") ? 10 : 0);
-                  difPos = pos + 8 - endPos;
-                  tr = (tr || newState.tr).insertText(
-                    "${hide} ",
-                    pos + offset,
-                    endPos + offset
-                  );
-                }
-              } else {
-                // TODO (carl) actually detect hidden and unhide
-                if (
-                  node.isTextblock &&
-                  node.textContent.startsWith("${hide} ")
-                ) {
-                  difPos = -8;
-                  tr = (tr || newState.tr).insertText(
-                    "",
-                    pos + offset,
-                    pos + offset + 8
-                  );
+                if (node.type === newState.schema.nodes.list_item && i === 0) {
+                  nodeTags = evaluateChild[2];
                 }
               }
             }
-            return [match, offset + difPos];
+            const difPos = 0;
+            // TODO (carl) other types of nodes / blocks
+            if (
+              (node.isTextblock &&
+                parent.type !== newState.schema.nodes.list_item) ||
+              node.type === newState.schema.nodes.list_item
+            ) {
+              tr = (tr || newState.tr).setNodeMarkup(pos - 1, node.type, {
+                hidden: !match,
+              });
+            }
+            return [tr, match, nodeTags, offset + difPos];
           };
-          evaluate(newState.doc, 0, 0);
-          return tr;
+          return evaluate(null, newState.doc, null, new Set(), 0, 0)[0];
         },
       }),
     ];

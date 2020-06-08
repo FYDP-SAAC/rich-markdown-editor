@@ -842,6 +842,10 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
     }
   }
 
+  .hidden {
+    display: none;
+  }
+
   pre {
     display: block;
     overflow-x: auto;
