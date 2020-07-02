@@ -353,10 +353,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    console.log("Creating State");
-    console.log(this.props.defaultJSON);
     if(this.props.defaultJSON != null){
-       console.log(this.props.defaultJSON);
        var jsonObj = JSON.parse(this.props.defaultJSON);
        return EditorState.fromJSON({
         schema: this.schema,
