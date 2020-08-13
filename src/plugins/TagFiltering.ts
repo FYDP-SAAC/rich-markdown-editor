@@ -1,6 +1,4 @@
-import { NodeRange } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
-import { findWrapping } from "prosemirror-transform";
 import Extension from "../lib/Extension";
 
 export default class TagFiltering extends Extension {
@@ -41,6 +39,55 @@ export default class TagFiltering extends Extension {
     return TagFiltering.matchTagFilters(tags, tagFilters[2]);
   };
 
+  static evaluateTagFilters = (
+    tr,
+    schema,
+    tagFilters,
+    node,
+    parent,
+    parentTags,
+    pos
+  ) => {
+    let match = false;
+    const nodeTags = new Set([...parentTags]);
+    const isTagFilterableBlock =
+      (node.isTextblock && parent.type !== schema.nodes.list_item) ||
+      node.type === schema.nodes.bullet_list ||
+      node.type === schema.nodes.ordered_list;
+    if (isTagFilterableBlock) {
+      for (const nodeTag of Object.keys(node.attrs.tags)) {
+        nodeTags.add(nodeTag);
+      }
+      match = TagFiltering.matchTagFilters(nodeTags, tagFilters);
+    }
+    if (!node.isTextBlock) {
+      let cumulativeChildSize = 1;
+      for (let i = 0; i < node.childCount; ++i) {
+        const child = node.child(i);
+        const evaluateChild = TagFiltering.evaluateTagFilters(
+          tr,
+          schema,
+          tagFilters,
+          child,
+          node,
+          nodeTags,
+          pos + cumulativeChildSize
+        );
+        tr = evaluateChild[0];
+        cumulativeChildSize += child.nodeSize;
+        match = match || evaluateChild[1];
+      }
+    }
+    // TODO (carl) other types of nodes / blocks
+    if (isTagFilterableBlock) {
+      tr = tr.setNodeMarkup(pos - 1, node.type, {
+        hidden: !match,
+        tags: node.attrs.tags,
+      });
+    }
+    return [tr, match];
+  };
+
   get plugins() {
     return [
       new Plugin({
@@ -66,52 +113,15 @@ export default class TagFiltering extends Extension {
           if (trTagFilters === undefined) {
             return;
           }
-          const evaluate = (tr, node, parent, parentTags, pos, offset) => {
-            let match = false;
-            let nodeTags = new Set([...parentTags]);
-            if (node.isTextblock) {
-              const nodeTagsIt = node.textContent.matchAll(
-                TagFiltering.TAG_REGEX
-              );
-              for (const nodeTag of nodeTagsIt) {
-                nodeTags.add(nodeTag[0]);
-              }
-              match = TagFiltering.matchTagFilters(nodeTags, trTagFilters);
-            } else {
-              let cumulativeChildSize = 1;
-              for (let i = 0; i < node.childCount; ++i) {
-                const child = node.child(i);
-                const evaluateChild = evaluate(
-                  tr,
-                  child,
-                  node,
-                  nodeTags,
-                  pos + cumulativeChildSize,
-                  offset
-                );
-                tr = evaluateChild[0];
-                match = match || evaluateChild[1];
-                offset = evaluateChild[3];
-                cumulativeChildSize += child.nodeSize;
-                if (node.type === newState.schema.nodes.list_item && i === 0) {
-                  nodeTags = evaluateChild[2];
-                }
-              }
-            }
-            const difPos = 0;
-            // TODO (carl) other types of nodes / blocks
-            if (
-              (node.isTextblock &&
-                parent.type !== newState.schema.nodes.list_item) ||
-              node.type === newState.schema.nodes.list_item
-            ) {
-              tr = (tr || newState.tr).setNodeMarkup(pos - 1, node.type, {
-                hidden: !match,
-              });
-            }
-            return [tr, match, nodeTags, offset + difPos];
-          };
-          return evaluate(null, newState.doc, null, new Set(), 0, 0)[0];
+          return TagFiltering.evaluateTagFilters(
+            newState.tr,
+            newState.schema,
+            trTagFilters,
+            newState.doc,
+            null,
+            new Set(),
+            0
+          )[0];
         },
       }),
     ];

@@ -5,7 +5,7 @@ import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { MarkdownParser, MarkdownSerializer } from "prosemirror-markdown";
 import { EditorView } from "prosemirror-view";
-import { Schema, NodeSpec, MarkSpec } from "prosemirror-model";
+import { Schema, NodeSpec, MarkSpec, Node } from "prosemirror-model";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap } from "prosemirror-commands";
@@ -22,7 +22,6 @@ import Extension from "./lib/Extension";
 import ExtensionManager from "./lib/ExtensionManager";
 import ComponentView from "./lib/ComponentView";
 import headingToSlug from "./lib/headingToSlug";
-import { Node as ProsemirrorNode } from "prosemirror-model";
 
 // nodes
 import ReactNode from "./nodes/ReactNode";
@@ -72,6 +71,7 @@ export type Props = {
   id?: string;
   value?: string;
   defaultValue: string;
+  jsonStrValue: boolean;
   tagFilters: string[];
   placeholder: string;
   extensions: Extension[];
@@ -83,8 +83,7 @@ export type Props = {
   uploadImage?: (file: File) => Promise<string>;
   onSave?: ({ done: boolean }) => void;
   onCancel?: () => void;
-  onChange: (value: () => string) => void;
-  onModelChange: (node: ProsemirrorNode) => ProsemirrorNode;
+  onChange: (value: (jsonStrVal: boolean) => string) => void;
   onImageUploadStart?: () => void;
   onImageUploadStop?: () => void;
   onSearchLink?: (term: string) => Promise<SearchResult[]>;
@@ -106,6 +105,7 @@ type State = {
 class RichMarkdownEditor extends React.PureComponent<Props, State> {
   static defaultProps = {
     defaultValue: "",
+    jsonStrValue: false,
     tagFilters: null,
     placeholder: "Write something nice…",
     onImageUploadStart: () => {
@@ -145,7 +145,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
-    console.log(this);
 
     const transaction = this.view.state.tr.setMeta(
       TagFiltering.pluginKey,
@@ -352,7 +351,9 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    const doc = this.createDocument(value || this.props.defaultValue);
+    const doc = this.props.jsonStrValue
+      ? Node.fromJSON(this.schema, JSON.parse(value || this.props.defaultValue))
+      : this.parser.parse(value || this.props.defaultValue);
     return EditorState.create({
       schema: this.schema,
       doc,
@@ -367,10 +368,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         keymap(baseKeymap),
       ],
     });
-  }
-
-  createDocument(content: string) {
-    return this.parser.parse(content);
   }
 
   createView() {
@@ -416,15 +413,16 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
     }
   }
 
-  value = (): string => {
+  value = (jsonStrVal: boolean): string => {
+    if (jsonStrVal) {
+      return JSON.stringify(this.view.state.doc);
+    }
     return this.serializer.serialize(this.view.state.doc);
   };
 
   handleChange = () => {
     if (this.props.onChange && !this.props.readOnly) {
-      this.props.onChange(() => {
-        return this.value();
-      });
+      this.props.onChange(this.value);
     }
   };
 
