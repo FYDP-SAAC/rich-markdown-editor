@@ -24,6 +24,9 @@ export default class Heading extends Node {
   get schema() {
     return {
       attrs: {
+        tags: {
+          default: {},
+        },
         hidden: {
           default: false,
         },

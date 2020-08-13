@@ -10,6 +10,12 @@ export default class OrderedList extends Node {
   get schema() {
     return {
       attrs: {
+        tags: {
+          default: {},
+        },
+        hidden: {
+          default: false,
+        },
         order: {
           default: 1,
         },
@@ -20,14 +26,21 @@ export default class OrderedList extends Node {
         {
           tag: "ol",
           getAttrs: (dom: HTMLElement) => ({
+            hidden: dom.className === "hidden",
             order: dom.hasAttribute("start") ? +dom.getAttribute("start") : 1,
           }),
         },
       ],
-      toDOM: node =>
-        node.attrs.order === 1
-          ? ["ol", 0]
-          : ["ol", { start: node.attrs.order }, 0],
+      toDOM: node => {
+        if (node.attrs.hidden && node.attrs.order !== 1) {
+          return ["ul", { class: "hidden" }, { start: node.attrs.order }, 0];
+        } else if (node.attrs.hidden) {
+          return ["ul", { class: "hidden" }, 0];
+        } else if (node.attrs.order !== 1) {
+          return ["ul", { start: node.attrs.order }, 0];
+        }
+        return ["ul", 0];
+      },
     };
   }
 
