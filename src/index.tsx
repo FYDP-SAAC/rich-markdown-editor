@@ -72,6 +72,7 @@ export type Props = {
   id?: string;
   value?: string;
   defaultValue: string;
+  defaultJSON?: string;
   tagFilters: string[];
   placeholder: string;
   extensions: Extension[];
@@ -81,7 +82,7 @@ export type Props = {
   theme?: typeof theme;
   headingsOffset?: number;
   uploadImage?: (file: File) => Promise<string>;
-  onSave?: ({ done: boolean }) => void;
+  onSave?: ({ done: boolean , doc: ProsemirrorNode}) => void;
   onCancel?: () => void;
   onChange: (value: () => string) => void;
   onModelChange: (node: ProsemirrorNode) => ProsemirrorNode;
@@ -352,21 +353,38 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    const doc = this.createDocument(value || this.props.defaultValue);
-    return EditorState.create({
-      schema: this.schema,
-      doc,
-      plugins: [
-        ...this.plugins,
-        ...this.keymaps,
-        dropCursor(),
-        gapCursor(),
-        inputRules({
-          rules: this.inputRules,
-        }),
-        keymap(baseKeymap),
-      ],
-    });
+    if(this.props.defaultJSON != null){
+       var jsonObj = JSON.parse(this.props.defaultJSON);
+       return EditorState.fromJSON({
+        schema: this.schema,
+        plugins: [
+          ...this.plugins,
+          ...this.keymaps,
+          dropCursor(),
+          gapCursor(),
+          inputRules({
+            rules: this.inputRules,
+          }),
+          keymap(baseKeymap),
+        ],
+      }, jsonObj)
+    }else{
+      const doc = this.createDocument(value || this.props.defaultValue);
+      return EditorState.create({
+          schema: this.schema,
+          doc,
+          plugins: [
+            ...this.plugins,
+            ...this.keymaps,
+            dropCursor(),
+            gapCursor(),
+            inputRules({
+              rules: this.inputRules,
+            }),
+            keymap(baseKeymap),
+          ],
+        });
+    }
   }
 
   createDocument(content: string) {
@@ -431,14 +449,14 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   handleSave = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: false });
+      onSave({ done: false , doc: this.view.state});
     }
   };
 
   handleSaveAndExit = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: true });
+      onSave({ done: true , doc: this.view.state });
     }
   };
 
