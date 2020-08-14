@@ -49,15 +49,7 @@ export default class Heading extends Node {
         button.className = "heading-anchor";
         button.addEventListener("click", this.handleCopyLink());
         // TODO (carl) hiding then unhiding changes h level to 1 somehow
-        var tagsDiv = document.createElement("div"); 
-        var tagString = ""
-        node.attrs.tags.forEach(element => {
-          console.log("adding :" + element)
-          tagString += element
-        });
-        var tagContent = document.createTextNode(tagString); 
         // add the text node to the newly created div
-        tagsDiv.appendChild(tagContent);  
         if (node.attrs.hidden) {
           return [
             `h${node.attrs.level + (this.options.offset || 0)}`,

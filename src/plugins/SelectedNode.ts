@@ -14,14 +14,10 @@ export default class SelectedNode extends Extension {
                 decorations(state) {
                     const { selection } = state;
                     const decorations = [];
-                    console.log(selection.from)
-                    console.log(selection.to)
                     state.doc.nodesBetween(
                     selection.from,
                     selection.to,
                     (node, position) => {
-                        console.log(node.toJSON());
-                        console.log(node.marks);
                         if (node.isBlock) {
                         decorations.push(
                             Decoration.node(position, position + node.nodeSize, {

@@ -31,7 +31,6 @@ class TagMenu extends React.Component<Props> {
   }
 
   addTag(event){
-    console.log(this.state.tag);
     const { view } = this.props;
     const { state } = view;
     const { tr, selection } = state
@@ -127,7 +126,6 @@ class TagMenu extends React.Component<Props> {
       const { $anchor } = selection;
       const resolvedPos = state.doc.resolve($anchor.pos) as any;
       const rowNumber = resolvedPos.path[1];
-      console.log(rowNumber)
       let i = 0;
       if ($anchor.pos === 0) {
         return {
