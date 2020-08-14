@@ -8,10 +8,23 @@ export default class Paragraph extends Node {
 
   get schema() {
     return {
+      attrs: {
+        hidden: {
+          default: false,
+        },
+      },
       content: "inline*",
       group: "block",
-      parseDOM: [{ tag: "p" }],
-      toDOM() {
+      parseDOM: [
+        {
+          tag: "p",
+          getAttrs: dom => ({ hidden: dom.class === "hidden" }),
+        },
+      ],
+      toDOM: node => {
+        if (node.attrs.hidden) {
+          return ["p", { class: "hidden" }, 0];
+        }
         return ["p", 0];
       },
     };

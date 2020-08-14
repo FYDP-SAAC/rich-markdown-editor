@@ -24,6 +24,9 @@ export default class Heading extends Node {
   get schema() {
     return {
       attrs: {
+        hidden: {
+          default: false,
+        },
         level: {
           default: 1,
         },
@@ -34,7 +37,7 @@ export default class Heading extends Node {
       draggable: false,
       parseDOM: this.options.levels.map(level => ({
         tag: `h${level}`,
-        attrs: { level },
+        getAttrs: dom => ({ level: level, hidden: dom.class === "hidden" }),
       })),
       toDOM: node => {
         const button = document.createElement("button");
@@ -42,7 +45,15 @@ export default class Heading extends Node {
         button.type = "button";
         button.className = "heading-anchor";
         button.addEventListener("click", this.handleCopyLink());
-
+        // TODO (carl) hiding then unhiding changes h level to 1 somehow
+        if (node.attrs.hidden) {
+          return [
+            `h${node.attrs.level + (this.options.offset || 0)}`,
+            { class: "hidden" },
+            button,
+            ["span", 0],
+          ];
+        }
         return [
           `h${node.attrs.level + (this.options.offset || 0)}`,
           button,

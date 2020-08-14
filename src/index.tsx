@@ -62,6 +62,7 @@ import Placeholder from "./plugins/Placeholder";
 import SmartText from "./plugins/SmartText";
 import TrailingNode from "./plugins/TrailingNode";
 import MarkdownPaste from "./plugins/MarkdownPaste";
+import TagFiltering from "./plugins/TagFiltering";
 
 export { schema, parser, serializer } from "./server";
 
@@ -71,6 +72,8 @@ export type Props = {
   id?: string;
   value?: string;
   defaultValue: string;
+  defaultJSON?: string;
+  tagFilters: string[];
   placeholder: string;
   extensions: Extension[];
   autoFocus?: boolean;
@@ -79,7 +82,7 @@ export type Props = {
   theme?: typeof theme;
   headingsOffset?: number;
   uploadImage?: (file: File) => Promise<string>;
-  onSave?: ({ done: boolean }) => void;
+  onSave?: ({ done: boolean , doc: ProsemirrorNode}) => void;
   onCancel?: () => void;
   onChange: (value: () => string) => void;
   onModelChange: (node: ProsemirrorNode) => ProsemirrorNode;
@@ -104,6 +107,7 @@ type State = {
 class RichMarkdownEditor extends React.PureComponent<Props, State> {
   static defaultProps = {
     defaultValue: "",
+    tagFilters: null,
     placeholder: "Write something nice…",
     onImageUploadStart: () => {
       // no default behavior
@@ -142,6 +146,14 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
+    console.log(this);
+
+    const transaction = this.view.state.tr.setMeta(
+      TagFiltering.pluginKey,
+      this.props.tagFilters
+    );
+    this.view.dispatch(transaction);
+
     this.scrollToAnchor();
 
     if (this.props.readOnly) return;
@@ -152,6 +164,14 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
+    if (this.props.tagFilters !== prevProps.tagFilters) {
+      const transaction = this.view.state.tr.setMeta(
+        TagFiltering.pluginKey,
+        this.props.tagFilters
+      );
+      this.view.dispatch(transaction);
+    }
+
     // Allow changes to the 'value' prop to update the editor from outside
     if (this.props.value && prevProps.value !== this.props.value) {
       const newState = this.createState(this.props.value);
@@ -243,6 +263,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new SmartText(),
         new TrailingNode(),
         new MarkdownPaste(),
+        new TagFiltering(),
         new Keys({
           onSave: this.handleSave,
           onSaveAndExit: this.handleSaveAndExit,
@@ -332,37 +353,43 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    const doc = this.createDocument(value || this.props.defaultValue);
-    return EditorState.create({
-      schema: this.schema,
-      doc,
-      plugins: [
-        ...this.plugins,
-        ...this.keymaps,
-        dropCursor(),
-        gapCursor(),
-        inputRules({
-          rules: this.inputRules,
-        }),
-        keymap(baseKeymap),
-      ],
-    });
+    if(this.props.defaultJSON != null){
+       var jsonObj = JSON.parse(this.props.defaultJSON);
+       return EditorState.fromJSON({
+        schema: this.schema,
+        plugins: [
+          ...this.plugins,
+          ...this.keymaps,
+          dropCursor(),
+          gapCursor(),
+          inputRules({
+            rules: this.inputRules,
+          }),
+          keymap(baseKeymap),
+        ],
+      }, jsonObj)
+    }else{
+      const doc = this.createDocument(value || this.props.defaultValue);
+      return EditorState.create({
+          schema: this.schema,
+          doc,
+          plugins: [
+            ...this.plugins,
+            ...this.keymaps,
+            dropCursor(),
+            gapCursor(),
+            inputRules({
+              rules: this.inputRules,
+            }),
+            keymap(baseKeymap),
+          ],
+        });
+    }
   }
 
   createDocument(content: string) {
     return this.parser.parse(content);
   }
-
-  // traverse(rootNode, levelIndent){
-  //   if(rootNode.isText){
-  //     console.log(levelIndent + rootNode.text);
-  //   }
-  //   if(!rootNode.isLeaf){
-  //     for(let i = 0 ; i < rootNode.childCount; i++){
-  //       this.traverse(rootNode.child(i), levelIndent + "\t");
-  //     }
-  //   }
-  // }
 
   createView() {
     const view = new EditorView(this.element, {
@@ -373,16 +400,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         const { state, transactions } = this.view.state.applyTransaction(
           transaction
         );
-        // console.log(state.doc.toString());
-        // console.log(state.doc.toJSON());
-        // console.log("Total Children: " + state.doc.childCount);
-        // let tempRoot = state.doc;
-        // this.traverse(tempRoot, "");
-        // 
-        console.log("calling modelChange");
-        if (this.props.onModelChange){
-          state.doc = this.props.onModelChange(state.doc);
-        }
 
         this.view.updateState(state);
 
@@ -418,7 +435,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   value = (): string => {
-    console.log(this.view.state.doc);
     return this.serializer.serialize(this.view.state.doc);
   };
 
@@ -433,14 +449,14 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   handleSave = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: false });
+      onSave({ done: false , doc: this.view.state});
     }
   };
 
   handleSaveAndExit = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: true });
+      onSave({ done: true , doc: this.view.state });
     }
   };
 
@@ -842,6 +858,10 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
         display: ${props => (props.readOnly ? "inline" : "none")};
       }
     }
+  }
+
+  .hidden {
+    display: none;
   }
 
   pre {
