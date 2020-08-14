@@ -12,6 +12,9 @@ export default class Paragraph extends Node {
         hidden: {
           default: false,
         },
+        tags: {
+          default: []
+        }
       },
       content: "inline*",
       group: "block",
@@ -25,6 +28,7 @@ export default class Paragraph extends Node {
         if (node.attrs.hidden) {
           return ["p", { class: "hidden" }, 0];
         }
+
         return ["p", 0];
       },
     };

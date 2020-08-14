@@ -29,6 +29,7 @@ import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
 import Link from "./marks/Link";
 import Strikethrough from "./marks/Strikethrough";
+import Tag from "./marks/Tag";
 
 const extensions = new ExtensionManager([
   new Doc(),
@@ -54,6 +55,7 @@ const extensions = new ExtensionManager([
   new Highlight(),
   new Italic(),
   new Link(),
+  new Tag(),
   new Strikethrough(),
   new OrderedList(),
 ]);

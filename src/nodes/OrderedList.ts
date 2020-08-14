@@ -13,6 +13,9 @@ export default class OrderedList extends Node {
         order: {
           default: 1,
         },
+        tags: {
+          default: []
+        }
       },
       content: "list_item+",
       group: "block",

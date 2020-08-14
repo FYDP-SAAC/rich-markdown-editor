@@ -20,6 +20,9 @@ export default class CheckboxItem extends Node {
         checked: {
           default: false,
         },
+        tags: {
+          default: []
+        }
       },
       content: "paragraph block*",
       defining: true,
