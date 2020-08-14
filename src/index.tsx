@@ -54,7 +54,6 @@ import Highlight from "./marks/Highlight";
 import Italic from "./marks/Italic";
 import Link from "./marks/Link";
 import Strikethrough from "./marks/Strikethrough";
-import Tag from "./marks/Tag";
 
 // plugins
 import BlockMenuTrigger from "./plugins/BlockMenuTrigger";
@@ -260,7 +259,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
           onClickLink: this.props.onClickLink,
           onClickHashtag: this.props.onClickHashtag,
         }),
-        new Tag(),
         new Strikethrough(),
         new OrderedList(),
         new History(),
