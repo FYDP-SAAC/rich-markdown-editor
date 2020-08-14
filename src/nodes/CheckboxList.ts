@@ -11,7 +11,7 @@ export default class CheckboxList extends Node {
     return {
       attrs: {
         tags: {
-          default: []
+          default: {}
         }
       },
       group: "block",

@@ -66,7 +66,7 @@ export default class CodeFence extends Node {
           default: "javascript",
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "text*",

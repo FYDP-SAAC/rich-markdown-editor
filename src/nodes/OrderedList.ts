@@ -14,7 +14,7 @@ export default class OrderedList extends Node {
           default: 1,
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "list_item+",

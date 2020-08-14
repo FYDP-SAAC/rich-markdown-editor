@@ -15,7 +15,7 @@ export default class Embed extends Node {
         component: {},
         matches: {},
         tags: {
-          default: []
+          default: {}
         }
       },
       parseDOM: [{ tag: "iframe" }],

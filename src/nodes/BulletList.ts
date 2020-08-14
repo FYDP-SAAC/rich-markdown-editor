@@ -11,7 +11,7 @@ export default class BulletList extends Node {
     return {
       attrs: {
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "list_item+",

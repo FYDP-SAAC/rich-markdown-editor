@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { findChildren } from 'prosemirror-utils';
 import { EditorView } from "prosemirror-view";
-
+import { v4 as uuidv4 } from 'uuid';
 type Props = {
     view: EditorView;
 };
@@ -15,7 +15,7 @@ class TagMenu extends React.Component<Props> {
     top: -1000,
     tag: "",
     position: -1000,
-    existingAttrs: [],
+    existingAttrs: {},
     selectedTagIndex: -1
   };
 
@@ -36,11 +36,14 @@ class TagMenu extends React.Component<Props> {
     const { tr, selection } = state
     const tagMarkType = state.schema.marks.tag;
     const tagName = this.state.tag 
-    var prevAttrs = Array.from(this.state.existingAttrs)
-    prevAttrs.push(tagName)
-    const transaction = tr.setNodeMarkup(this.state.position, undefined, {tags: prevAttrs});
+    var newTags = {}
+    for (var key in this.state.existingAttrs){
+      newTags[key] = this.state.existingAttrs[key]
+    }
+    newTags[uuidv4()] = tagName;
+    const transaction = tr.setNodeMarkup(this.state.position, undefined, {tags: newTags});
     view.dispatch(transaction);
-    this.setState({tag: "", existingAttrs: prevAttrs})
+    this.setState({tag: "", existingAttrs: newTags})
   }
   
   selectTag(index){
@@ -72,12 +75,12 @@ class TagMenu extends React.Component<Props> {
                           paddingLeft: "5px",
                           marginTop: "0px",
                           background: "#f2f2f4"}}>
-                {this.state.existingAttrs.map(function(name, index){
+                {Object.keys(this.state.existingAttrs).map((key, index) => {
                     return <li 
                     // onClick={this.selectTag(index)} 
                     key={ index }
                     // style={{ background: this.state.selectedTagIndex == index ? "white" : "#f2f2f4"}}
-                    >{name}</li>;
+                    >{this.state.existingAttrs[key]}</li>;
                   })}
                </ul>
              </nav>

@@ -76,7 +76,7 @@ export default class Image extends Node {
           default: null,
         },
         tags:{
-          default: []
+          default: {}
         }
       },
       content: "text*",

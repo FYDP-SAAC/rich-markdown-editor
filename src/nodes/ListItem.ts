@@ -17,7 +17,7 @@ export default class ListItem extends Node {
           default: false,
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "paragraph block*",

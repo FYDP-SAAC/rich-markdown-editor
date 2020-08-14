@@ -31,7 +31,7 @@ export default class Heading extends Node {
           default: 1,
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "inline*",

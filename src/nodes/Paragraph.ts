@@ -13,7 +13,7 @@ export default class Paragraph extends Node {
           default: false,
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "inline*",

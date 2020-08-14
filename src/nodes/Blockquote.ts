@@ -11,7 +11,7 @@ export default class Blockquote extends Node {
     return {
       attrs: {
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "block+",

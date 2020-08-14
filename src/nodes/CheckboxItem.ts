@@ -21,7 +21,7 @@ export default class CheckboxItem extends Node {
           default: false,
         },
         tags: {
-          default: []
+          default: {}
         }
       },
       content: "paragraph block*",
