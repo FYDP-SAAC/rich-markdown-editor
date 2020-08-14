@@ -2,9 +2,19 @@ import * as React from 'react';
 import { findChildren } from 'prosemirror-utils';
 import { EditorView } from "prosemirror-view";
 import { v4 as uuidv4 } from 'uuid';
+import styled from "styled-components";
+import { CloseIcon } from "outline-icons";
+
 type Props = {
     view: EditorView;
 };
+
+type TagListProps = {
+    key: string;
+    selectedKey: string;
+    tagName: string;
+    deleteTag: () => void 
+}
 
 class TagMenu extends React.Component<Props> {
 
@@ -16,13 +26,13 @@ class TagMenu extends React.Component<Props> {
     tag: "",
     position: -1000,
     existingAttrs: {},
-    selectedTagIndex: -1
+    selectedTagKey: ""
   };
 
   componentDidUpdate(prevProps,prevState) {
     const nextStyle = this.calculatePosition(this.props);
     if(prevState.top != nextStyle.top){
-        this.setState({ top: nextStyle.top, left: nextStyle.left, tag: "", position: nextStyle.position, existingAttrs: nextStyle.existingAttrs, selectedTagIndex: -1 });
+        this.setState({ top: nextStyle.top, left: nextStyle.left, tag: "", position: nextStyle.position, existingAttrs: nextStyle.existingAttrs, selectedTagIndex: "" });
     }
   }
 
@@ -34,7 +44,6 @@ class TagMenu extends React.Component<Props> {
     const { view } = this.props;
     const { state } = view;
     const { tr, selection } = state
-    const tagMarkType = state.schema.marks.tag;
     const tagName = this.state.tag 
     var newTags = {}
     for (var key in this.state.existingAttrs){
@@ -46,8 +55,20 @@ class TagMenu extends React.Component<Props> {
     this.setState({tag: "", existingAttrs: newTags})
   }
   
-  selectTag(index){
-    this.setState({selectedTagIndex: index})
+  deleteTag(keyToDelete){
+    const { view } = this.props;
+    const { state } = view;
+    const { tr, selection } = state
+    const tagName = this.state.tag 
+    var newTags = {}
+    for (var key in this.state.existingAttrs){
+      if(key !== keyToDelete){
+        newTags[key] = this.state.existingAttrs[key]
+      }
+    }
+    const transaction = tr.setNodeMarkup(this.state.position, undefined, {tags: newTags});
+    view.dispatch(transaction);
+    this.setState({existingAttrs: newTags})
   }
   render() {
     return (
@@ -71,16 +92,10 @@ class TagMenu extends React.Component<Props> {
                <ul style={{overflow: "hidden", 
                           overflowY: "scroll", 
                           listStyle: "none", 
-                          height:"67px", 
                           paddingLeft: "5px",
-                          marginTop: "0px",
-                          background: "#f2f2f4"}}>
+                          marginTop: "0px"}}>
                 {Object.keys(this.state.existingAttrs).map((key, index) => {
-                    return <li 
-                    // onClick={this.selectTag(index)} 
-                    key={ index }
-                    // style={{ background: this.state.selectedTagIndex == index ? "white" : "#f2f2f4"}}
-                    >{this.state.existingAttrs[key]}</li>;
+                    return <TagItem key={key} selectedKey={this.state.selectedTagKey} tagName={this.state.existingAttrs[key]} deleteTag={() => this.deleteTag(key)}/>
                   })}
                </ul>
              </nav>
@@ -171,4 +186,43 @@ class TagMenu extends React.Component<Props> {
     }
 }
 
+class TagItem extends React.Component<TagListProps> {
+  render() {
+    return(
+      <li 
+      key={ this.props.key }
+      className="tagList"
+      style={{width: "100px"}}
+      >
+        <div
+          style = {{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            border: "1px solid rgb(78, 92, 110)",
+            borderRadius: "5px"
+          }}
+        >
+          <div
+          style = {{
+            fontFamily: "'SFMono-Regular',Consolas,'Liberation Mono',Menlo,Courier,monospace",
+            color: "#4E5C6E",
+            fontSize: "13px",
+            width: "80%",
+            textAlign: "center"
+          }}>
+            {this.props.tagName}
+          </div>
+          <div
+          style={{borderLeft: "1px solid rgb(78, 92, 110)",
+                  cursor: "pointer"}}
+          onClick={() => this.props.deleteTag()} 
+                  >
+            <CloseIcon/>
+          </div>
+        </div>
+      </li>
+    )
+  }
+}
 export default TagMenu;
