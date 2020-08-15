@@ -73,6 +73,7 @@ export type Props = {
   value?: string;
   defaultValue: string;
   defaultJSON?: string;
+  setJSON?: string;
   tagFilters: string[];
   placeholder: string;
   extensions: Extension[];
@@ -146,7 +147,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
-    console.log(this);
 
     const transaction = this.view.state.tr.setMeta(
       TagFiltering.pluginKey,
@@ -170,6 +170,12 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         this.props.tagFilters
       );
       this.view.dispatch(transaction);
+    }
+
+    // Allow changes to the 'setJSON' prop to update the editor from outside
+    if (this.props.setJSON && prevProps.setJSON !== this.props.setJSON) {
+      const newState = this.createState(this.props.setJSON);
+      this.view.updateState(newState);
     }
 
     // Allow changes to the 'value' prop to update the editor from outside
@@ -353,8 +359,8 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    if(this.props.defaultJSON != null){
-       var jsonObj = JSON.parse(this.props.defaultJSON);
+    if(this.props.setJSON != null || this.props.defaultJSON != null){
+       var jsonObj = JSON.parse(this.props.setJSON || this.props.defaultJSON);
        return EditorState.fromJSON({
         schema: this.schema,
         plugins: [
