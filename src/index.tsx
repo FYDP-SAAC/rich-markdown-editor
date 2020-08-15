@@ -17,6 +17,7 @@ import { SearchResult } from "./components/LinkEditor";
 import { EmbedDescriptor } from "./types";
 import FloatingToolbar from "./components/FloatingToolbar";
 import BlockMenu from "./components/BlockMenu";
+import TagMenu from "./components/TagMenu";
 import Tooltip from "./components/Tooltip";
 import Extension from "./lib/Extension";
 import ExtensionManager from "./lib/ExtensionManager";
@@ -63,6 +64,7 @@ import SmartText from "./plugins/SmartText";
 import TrailingNode from "./plugins/TrailingNode";
 import MarkdownPaste from "./plugins/MarkdownPaste";
 import TagFiltering from "./plugins/TagFiltering";
+import SelectedNode from "./plugins/SelectedNode";
 
 export { schema, parser, serializer } from "./server";
 
@@ -270,6 +272,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new TrailingNode(),
         new MarkdownPaste(),
         new TagFiltering(),
+        new SelectedNode(),
         new Keys({
           onSave: this.handleSave,
           onSaveAndExit: this.handleSaveAndExit,
@@ -573,6 +576,9 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
                   onShowToast={this.props.onShowToast}
                   embeds={this.props.embeds}
                 />
+                <TagMenu
+                  view={this.view}
+                />
               </React.Fragment>
             )}
           </React.Fragment>
@@ -626,6 +632,10 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
     opacity: 0.5;
   }
 
+  .selectedNode{
+    background: #f2f2f4
+  }
+  
   .ProseMirror-hideselection *::selection {
     background: transparent;
   }

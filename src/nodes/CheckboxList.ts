@@ -9,6 +9,11 @@ export default class CheckboxList extends Node {
 
   get schema() {
     return {
+      attrs: {
+        tags: {
+          default: {}
+        }
+      },
       group: "block",
       content: "checkbox_item+",
       toDOM: () => ["ul", { class: this.name }, 0],

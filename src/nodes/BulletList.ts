@@ -9,6 +9,11 @@ export default class BulletList extends Node {
 
   get schema() {
     return {
+      attrs: {
+        tags: {
+          default: {}
+        }
+      },
       content: "list_item+",
       group: "block",
       parseDOM: [{ tag: "ul" }],

@@ -30,6 +30,9 @@ export default class Heading extends Node {
         level: {
           default: 1,
         },
+        tags: {
+          default: {}
+        }
       },
       content: "inline*",
       group: "block",
@@ -46,6 +49,7 @@ export default class Heading extends Node {
         button.className = "heading-anchor";
         button.addEventListener("click", this.handleCopyLink());
         // TODO (carl) hiding then unhiding changes h level to 1 somehow
+        // add the text node to the newly created div
         if (node.attrs.hidden) {
           return [
             `h${node.attrs.level + (this.options.offset || 0)}`,
