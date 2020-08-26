@@ -9,28 +9,10 @@ export default class BulletList extends Node {
 
   get schema() {
     return {
-      attrs: {
-        tags: {
-          default: {},
-        },
-        hidden: {
-          default: false,
-        },
-      },
       content: "list_item+",
       group: "block",
-      parseDOM: [
-        {
-          tag: "ul",
-          getAttrs: dom => ({ hidden: dom.class === "hidden" }),
-        },
-      ],
-      toDOM: node => {
-        if (node.attrs.hidden) {
-          return ["ul", { class: "hidden" }, 0];
-        }
-        return ["ul", 0];
-      },
+      parseDOM: [{ tag: "ul" }],
+      toDOM: () => ["ul", 0],
     };
   }
 

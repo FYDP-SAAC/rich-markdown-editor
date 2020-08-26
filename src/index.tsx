@@ -61,18 +61,18 @@ import Placeholder from "./plugins/Placeholder";
 import SmartText from "./plugins/SmartText";
 import TrailingNode from "./plugins/TrailingNode";
 import MarkdownPaste from "./plugins/MarkdownPaste";
-import TagFiltering from "./plugins/TagFiltering";
 
 export { schema, parser, serializer } from "./server";
 
 export const theme = lightTheme;
+
+export { Extension };
 
 export type Props = {
   id?: string;
   value?: string;
   defaultValue: string;
   jsonStrValue: boolean;
-  tagFilters: string[];
   placeholder: string;
   extensions: Extension[];
   autoFocus?: boolean;
@@ -106,7 +106,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   static defaultProps = {
     defaultValue: "",
     jsonStrValue: false,
-    tagFilters: null,
     placeholder: "Write something nice…",
     onImageUploadStart: () => {
       // no default behavior
@@ -145,13 +144,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
-
-    const transaction = this.view.state.tr.setMeta(
-      TagFiltering.pluginKey,
-      this.props.tagFilters
-    );
-    this.view.dispatch(transaction);
-
     this.scrollToAnchor();
 
     if (this.props.readOnly) return;
@@ -162,14 +154,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (this.props.tagFilters !== prevProps.tagFilters) {
-      const transaction = this.view.state.tr.setMeta(
-        TagFiltering.pluginKey,
-        this.props.tagFilters
-      );
-      this.view.dispatch(transaction);
-    }
-
     // Allow changes to the 'value' prop to update the editor from outside
     if (this.props.value && prevProps.value !== this.props.value) {
       const newState = this.createState(this.props.value);
@@ -261,7 +245,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new SmartText(),
         new TrailingNode(),
         new MarkdownPaste(),
-        new TagFiltering(),
         new Keys({
           onSave: this.handleSave,
           onSaveAndExit: this.handleSaveAndExit,
@@ -760,13 +743,8 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
 
   ul,
   ol {
-    margin: 0 0.1em;
+    margin: 0;
     padding: 0 0 0 1em;
-
-    ul,
-    ol {
-      margin: 0;
-    }
   }
 
   ul.checkbox_list {
@@ -838,10 +816,6 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
         display: ${props => (props.readOnly ? "inline" : "none")};
       }
     }
-  }
-
-  .hidden {
-    display: none;
   }
 
   pre {

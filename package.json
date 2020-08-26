@@ -81,7 +81,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/outline/rich-markdown-editor.git"
+    "url": "git+https://github.com/fydp-saac/rich-markdown-editor.git"
   },
   "keywords": [
     "editor",

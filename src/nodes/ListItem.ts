@@ -12,6 +12,11 @@ export default class ListItem extends Node {
 
   get schema() {
     return {
+      attrs: {
+        tags: {
+          default: {},
+        },
+      },
       content: "paragraph block*",
       defining: true,
       draggable: false,
