@@ -81,7 +81,7 @@ export type Props = {
   theme?: typeof theme;
   headingsOffset?: number;
   uploadImage?: (file: File) => Promise<string>;
-  onSave?: ({ done: boolean }) => void;
+  onSave?: ({ done: boolean , doc: ProsemirrorNode}) => void;
   onCancel?: () => void;
   onChange: (value: (jsonStrVal: boolean) => string) => void;
   onImageUploadStart?: () => void;
@@ -144,6 +144,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
+    
     this.scrollToAnchor();
 
     if (this.props.readOnly) return;
@@ -412,14 +413,14 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   handleSave = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: false });
+      onSave({ done: false , doc: this.view.state});
     }
   };
 
   handleSaveAndExit = () => {
     const { onSave } = this.props;
     if (onSave) {
-      onSave({ done: true });
+      onSave({ done: true , doc: this.view.state });
     }
   };
 
