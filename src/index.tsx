@@ -5,7 +5,7 @@ import { dropCursor } from "prosemirror-dropcursor";
 import { gapCursor } from "prosemirror-gapcursor";
 import { MarkdownParser, MarkdownSerializer } from "prosemirror-markdown";
 import { EditorView } from "prosemirror-view";
-import { Schema, NodeSpec, MarkSpec } from "prosemirror-model";
+import { Schema, NodeSpec, MarkSpec, Node } from "prosemirror-model";
 import { inputRules, InputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap } from "prosemirror-commands";
@@ -22,7 +22,6 @@ import Extension from "./lib/Extension";
 import ExtensionManager from "./lib/ExtensionManager";
 import ComponentView from "./lib/ComponentView";
 import headingToSlug from "./lib/headingToSlug";
-import { Node as ProsemirrorNode } from "prosemirror-model";
 
 // nodes
 import ReactNode from "./nodes/ReactNode";
@@ -62,19 +61,18 @@ import Placeholder from "./plugins/Placeholder";
 import SmartText from "./plugins/SmartText";
 import TrailingNode from "./plugins/TrailingNode";
 import MarkdownPaste from "./plugins/MarkdownPaste";
-import TagFiltering from "./plugins/TagFiltering";
 
 export { schema, parser, serializer } from "./server";
 
 export const theme = lightTheme;
 
+export { Extension };
+
 export type Props = {
   id?: string;
   value?: string;
   defaultValue: string;
-  defaultJSON?: string;
-  setJSON?: string;
-  tagFilters: string[];
+  jsonStrValue: boolean;
   placeholder: string;
   extensions: Extension[];
   autoFocus?: boolean;
@@ -85,8 +83,7 @@ export type Props = {
   uploadImage?: (file: File) => Promise<string>;
   onSave?: ({ done: boolean , doc: ProsemirrorNode}) => void;
   onCancel?: () => void;
-  onChange: (value: () => string) => void;
-  onModelChange: (node: ProsemirrorNode) => ProsemirrorNode;
+  onChange: (value: (jsonStrVal: boolean) => string) => void;
   onImageUploadStart?: () => void;
   onImageUploadStop?: () => void;
   onSearchLink?: (term: string) => Promise<SearchResult[]>;
@@ -108,7 +105,7 @@ type State = {
 class RichMarkdownEditor extends React.PureComponent<Props, State> {
   static defaultProps = {
     defaultValue: "",
-    tagFilters: null,
+    jsonStrValue: false,
     placeholder: "Write something nice…",
     onImageUploadStart: () => {
       // no default behavior
@@ -147,13 +144,7 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.init();
-
-    const transaction = this.view.state.tr.setMeta(
-      TagFiltering.pluginKey,
-      this.props.tagFilters
-    );
-    this.view.dispatch(transaction);
-
+    
     this.scrollToAnchor();
 
     if (this.props.readOnly) return;
@@ -164,20 +155,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (this.props.tagFilters !== prevProps.tagFilters) {
-      const transaction = this.view.state.tr.setMeta(
-        TagFiltering.pluginKey,
-        this.props.tagFilters
-      );
-      this.view.dispatch(transaction);
-    }
-
-    // Allow changes to the 'setJSON' prop to update the editor from outside
-    if (this.props.setJSON && prevProps.setJSON !== this.props.setJSON) {
-      const newState = this.createState(this.props.setJSON);
-      this.view.updateState(newState);
-    }
-
     // Allow changes to the 'value' prop to update the editor from outside
     if (this.props.value && prevProps.value !== this.props.value) {
       const newState = this.createState(this.props.value);
@@ -269,7 +246,6 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
         new SmartText(),
         new TrailingNode(),
         new MarkdownPaste(),
-        new TagFiltering(),
         new Keys({
           onSave: this.handleSave,
           onSaveAndExit: this.handleSaveAndExit,
@@ -359,42 +335,23 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
   }
 
   createState(value?: string) {
-    if(this.props.setJSON != null || this.props.defaultJSON != null){
-       var jsonObj = JSON.parse(this.props.setJSON || this.props.defaultJSON);
-       return EditorState.fromJSON({
-        schema: this.schema,
-        plugins: [
-          ...this.plugins,
-          ...this.keymaps,
-          dropCursor(),
-          gapCursor(),
-          inputRules({
-            rules: this.inputRules,
-          }),
-          keymap(baseKeymap),
-        ],
-      }, jsonObj)
-    }else{
-      const doc = this.createDocument(value || this.props.defaultValue);
-      return EditorState.create({
-          schema: this.schema,
-          doc,
-          plugins: [
-            ...this.plugins,
-            ...this.keymaps,
-            dropCursor(),
-            gapCursor(),
-            inputRules({
-              rules: this.inputRules,
-            }),
-            keymap(baseKeymap),
-          ],
-        });
-    }
-  }
-
-  createDocument(content: string) {
-    return this.parser.parse(content);
+    const doc = this.props.jsonStrValue
+      ? Node.fromJSON(this.schema, JSON.parse(value || this.props.defaultValue))
+      : this.parser.parse(value || this.props.defaultValue);
+    return EditorState.create({
+      schema: this.schema,
+      doc,
+      plugins: [
+        ...this.plugins,
+        ...this.keymaps,
+        dropCursor(),
+        gapCursor(),
+        inputRules({
+          rules: this.inputRules,
+        }),
+        keymap(baseKeymap),
+      ],
+    });
   }
 
   createView() {
@@ -440,15 +397,16 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
     }
   }
 
-  value = (): string => {
+  value = (jsonStrVal: boolean): string => {
+    if (jsonStrVal) {
+      return JSON.stringify(this.view.state.doc);
+    }
     return this.serializer.serialize(this.view.state.doc);
   };
 
   handleChange = () => {
     if (this.props.onChange && !this.props.readOnly) {
-      this.props.onChange(() => {
-        return this.value();
-      });
+      this.props.onChange(this.value);
     }
   };
 
@@ -786,13 +744,8 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
 
   ul,
   ol {
-    margin: 0 0.1em;
+    margin: 0;
     padding: 0 0 0 1em;
-
-    ul,
-    ol {
-      margin: 0;
-    }
   }
 
   ul.checkbox_list {
@@ -864,10 +817,6 @@ const StyledEditor = styled("div")<{ readOnly: boolean }>`
         display: ${props => (props.readOnly ? "inline" : "none")};
       }
     }
-  }
-
-  .hidden {
-    display: none;
   }
 
   pre {
