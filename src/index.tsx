@@ -169,6 +169,11 @@ class RichMarkdownEditor extends React.PureComponent<Props, State> {
       });
     }
 
+    if (this.props.defaultValue && prevProps.defaultValue !== this.props.defaultValue) {
+      const newState = this.createState();
+      this.view.updateState(newState);
+    }
+
     // Focus at the end of the document if switching from readOnly and autoFocus
     // is set to true
     if (prevProps.readOnly && !this.props.readOnly && this.props.autoFocus) {
